@@ -2,77 +2,71 @@ import os
 import random 
 import discord
 
+from discord.ext import commands
 from dotenv import load_dotenv
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = 'The Test Of Brewdog Boys Interactive'
+# GUILD = 'The Test Of Brewdog Boys Interactive'
 
 intents = discord.Intents().all()
 
-client = discord.Client(intents=intents)
+# client = discord.Client(intents=intents)
+bot = commands.Bot(command_prefix='!', intents=intents)
 
-@client.event
+@bot.event
 async def on_ready():
-    for guild in client.guilds:
-        if guild.name == GUILD:
-            break
-
-    print(
-        f'{client.user} is connected to the following guild:\n'
-        f'{guild.name}(id: {guild.id})\n'
-    )
+    f'{bot.user} is connected to the following guild(s):'
+    for guild in bot.guilds:
+        print(
+            f'{guild.name}(id: {guild.id})\n'
+        )
 
     members = '\n - '.join([member.name for member in guild.members])
     print(f'Guild Members:\n - {members}')
 
-@client.event
-async def on_message(message):
-    # print(f'guild: {message.guild}')
-    # print(f'channel: {message.channel}')
-    # print(f'author: {message.author}')
-    # print(f'content: {message.content}')
+@bot.command(name='parrot', help='make Tobby copy what you say')
+async def parrot(context):
+    message = context.message
+    reply = message.content[8:]
+    await context.send(reply)
 
-    if message.author == client.user:
-        return
-
-    if message.guild is None:  # This means it's a DM
-        print(f'DM received: {message.content}')
-        # Here you can add your code to handle the DM
-        reply = 'I have received your DM message. im currently doing nothing with it'
-        await message.author.send(reply)
-        return
-
+@bot.command(name='99', help='Responds with a random quote from Brooklyn 99')
+async def nine_nine(context):
     brooklyn_99_quotes = [
         'I\'m the human form of the 💯 emoji.',
         'Bingpot!',
-        (
-            'Cool. Cool cool cool cool cool cool cool, '
-            'no doubt no doubt no doubt no doubt.'
-        ),
+        'Cool. Cool cool cool cool cool cool cool, no doubt no doubt no doubt no doubt.',
+        'NINE NINE!'
     ]
+    response = random.choice(brooklyn_99_quotes)
+    await context.send(response)
 
-    if message.content.startswith('!'):
-        if message.content == '!99':
-            response = random.choice(brooklyn_99_quotes)
-            await message.channel.send(response)
-        
-        elif 'happy birthday' in message.content.lower():
-            await message.channel.send('Happy Birthday! 🎈🎉')
-        
-        elif 'rate' in message.content.lower():
-            await message.channel.send('Todays Drink is {insert drink here}')
-            await message.channel.send('sending you a DM')
-            dm_channel = await message.author.create_dm()  # Create a DM channel
-            await dm_channel.send('How do you rate {inser drink here?}')  # Send a message
+@bot.command(name='happy_birthday', help='Send a happy birthday message')
+async def happy_birthday(context):
+    await context.send('Happy Birthday! 🎈🎉')
 
-        elif 'help' in message.content.lower():
-            await message.channel.send('I can do the following commands:')
-            await message.channel.send('!99 - get a random quote from Brooklyn 99')
-            await message.channel.send('Happy Birthday - wish someone a happy birthday')
-            await message.channel.send('rate - rate todays drink')
-        
-        else:
-            await message.channel.send('Sorry I don\'t understand that command, try !help')
+@bot.command(name='rate', help='Rate todays drink')
+async def rate(context):
+    await context.send('sending you a DM')
+    dm_channel = await context.author.create_dm()
+    await dm_channel.send('How do you rate {insert drink here}?')
 
-client.run(TOKEN)
+@bot.command(name='beer_me', help='Get todays drink')
+async def beer_me(context):
+    await context.send('Todays Drink is {insert drink here}')
+
+@bot.command(name='roll_dice', help='Simulates rolling dice.')
+async def roll(ctx, number_of_dice: int, number_of_sides: int):
+    dice = [
+        str(random.choice(range(1, number_of_sides + 1)))
+        for _ in range(number_of_dice)
+    ]
+    await ctx.send(', '.join(dice))
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send('I do not recognize that command. Please try again, or use !help for a list of commands')
+
+bot.run(TOKEN)

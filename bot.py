@@ -30,13 +30,13 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    print(f'message top level {message}')
+    print(f'guild: {message.guild}')
+    print(f'channel: {message.channel}')
     print(f'author: {message.author}')
     print(f'content: {message.content}')
+
     if message.author == client.user:
         return
-
-    print(message.content)
 
     brooklyn_99_quotes = [
         'I\'m the human form of the 💯 emoji.',
@@ -52,6 +52,5 @@ async def on_message(message):
         await message.channel.send(response)
     elif 'happy birthday' in message.content.lower():
         await message.channel.send('Happy Birthday! 🎈🎉')
-
 
 client.run(TOKEN)

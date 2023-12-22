@@ -8,9 +8,7 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 GUILD = 'The Test Of Brewdog Boys Interactive'
 
-intents = discord.Intents.default()
-intents.messages = True
-intents.guilds = True
+intents = discord.Intents().all()
 
 client = discord.Client(intents=intents)
 
@@ -30,10 +28,10 @@ async def on_ready():
 
 @client.event
 async def on_message(message):
-    print(f'guild: {message.guild}')
-    print(f'channel: {message.channel}')
-    print(f'author: {message.author}')
-    print(f'content: {message.content}')
+    # print(f'guild: {message.guild}')
+    # print(f'channel: {message.channel}')
+    # print(f'author: {message.author}')
+    # print(f'content: {message.content}')
 
     if message.author == client.user:
         return

@@ -36,6 +36,11 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    if message.guild is None:  # This means it's a DM
+        print(f'DM received: {message.content}')
+        # Here you can add your code to handle the DM
+        return
+
     brooklyn_99_quotes = [
         'I\'m the human form of the 💯 emoji.',
         'Bingpot!',
@@ -45,10 +50,17 @@ async def on_message(message):
         ),
     ]
 
-    if message.content == '99!':
-        response = random.choice(brooklyn_99_quotes)
-        await message.channel.send(response)
-    elif 'happy birthday' in message.content.lower():
-        await message.channel.send('Happy Birthday! 🎈🎉')
+    if message.content.startswith('!'):
+        if message.content == '!99':
+            response = random.choice(brooklyn_99_quotes)
+            await message.channel.send(response)
+        elif 'happy birthday' in message.content.lower():
+            await message.channel.send('Happy Birthday! 🎈🎉')
+        elif 'rate' in message.content.lower():
+            await message.channel.send('Todays Drink is {insert drink here}')
+            await message.channel.send('sending you a DM')
+            dm_channel = await message.author.create_dm()  # Create a DM channel
+            await dm_channel.send('How do you rate {inser drink here?}')  # Send a message
+
 
 client.run(TOKEN)

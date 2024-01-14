@@ -33,6 +33,49 @@ class db_read(db_calls):
             print(e)
             return None
 
+    def get_items_to_rate(self, user_id: str, guild_id: str) -> list:
+        #print(f'user_id: {user_id}, guild_id: {guild_id}')
+        # get a list of items that have not been rated by the user and are available to rate (based on date) for the guild
+        try:
+            self.cursor.execute('''SELECT itr.name
+    ,c.category_name
+    ,itr.[description]
+    ,itr.available_to_rate_date
+FROM dbo.items_to_rate AS itr
+INNER JOIN dbo.categories AS c 
+    ON itr.category_id = c.id
+LEFT OUTER JOIN dbo.ratings AS r 
+    ON itr.id = r.item_id
+    AND r.user_id = ?
+WHERE itr.guild_id = ?
+    AND r.id IS NULL
+    AND itr.available_to_rate_date < GETDATE()''', (user_id,guild_id))
+            items = self.cursor.fetchall()
+            return items
+        except Exception as e:
+            print(e)
+            return 'error'
+    
+    def view_my_ratings(self, user_id: str, guild_id: str) -> list:
+        try:
+            self.cursor.execute('''SELECT itr.name
+    ,c.category_name
+    ,itr.[description]
+    ,r.rating
+FROM dbo.items_to_rate AS itr
+INNER JOIN dbo.categories AS c 
+    ON itr.category_id = c.id
+INNER JOIN dbo.ratings AS r
+    ON itr.id = r.item_id
+WHERE itr.guild_id = ?
+    AND r.user_id = ?''', (guild_id,user_id))
+            items = self.cursor.fetchall()
+            return items
+        except Exception as e:
+            print(e)
+            return 'error'
+        
+
 class db_write(db_calls):
     def __init__(self) -> None:
         super().__init__()
@@ -50,6 +93,7 @@ class db_write(db_calls):
         except Exception as e:
             print(e)
             return None
+    
 
     def add_item_to_rate(
         self, guild_id: str, item_name: str, category_name: str, description: str, available_to_rate_date: str
@@ -80,6 +124,21 @@ class db_write(db_calls):
         except Exception as e:
             print(e)
             return 'could not add item to rate'
+        return 'item added to rate'
 
-    def rate_item(self, guild_id: int, item_name: str, user_id: int, rating: int) -> None:
-        pass
+    def rate_item(self, guild_id: str, user_id: str, item_id: int, rating: int) -> None:
+        try:
+            self.cursor.execute(
+                "INSERT INTO ratings(guild_id, item_id, user_id, rating) VALUES (?, ?, ?, ?)",
+                (
+                    guild_id,
+                    item_id,
+                    user_id,
+                    rating
+                ),
+            )
+            self.cursor.commit()
+        except Exception as e:
+            print(e)
+            return 'could not add rating'
+        return 'rating added'

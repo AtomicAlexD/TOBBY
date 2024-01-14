@@ -68,9 +68,9 @@ It is recommended to use slash commands and therefore not use prefix commands.
 
 If you want to use prefix commands, make sure to also enable the intent below in the Discord developer portal.
 """
-# intents.members = True
-# intents.message_content = True
-# intents.presences = True
+intents.members = True
+intents.message_content = True
+intents.presences = True
 
 #Setup both of the loggers
 
@@ -174,7 +174,7 @@ class DiscordBot(commands.Bot):
         """
         Setup the game status task of the bot.
         """
-        statuses = ["with you!", "with Krypton!", "with humans!"]
+        statuses = ["with Beer", "Board Games", "with code", "Video Games"]
         await self.change_presence(activity=discord.Game(random.choice(statuses)))
 
     @status_task.before_loop

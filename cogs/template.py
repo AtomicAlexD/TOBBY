@@ -18,12 +18,12 @@ class Template(commands.Cog, name="template"):
     # Here you can just add your own commands, you'll always need to provide "self" as first parameter.
 
     @commands.hybrid_command(
-        name="testcommand",
-        description="This is a testing command that does nothing.",
+        name="templatecommand",
+        description="This is a template command that does nothing.",
     )
-    async def testcommand(self, context: Context) -> None:
+    async def teplatecommand(self, context: Context) -> None:
         """
-        This is a testing command that does nothing.
+        This is a teplate command that does nothing.
 
         :param context: The application command context.
         """

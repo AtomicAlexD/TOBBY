@@ -41,7 +41,7 @@ class rate_my(commands.Cog, name="rate_my"):
     )
     @app_commands.describe(
         name="The name of the new category.",
-        description="brief description of the category.",
+        description="description of the category.",
     )
     async def add_category_to_database(self, context: Context, name , description = 'none') -> None:
         """
@@ -58,7 +58,7 @@ class rate_my(commands.Cog, name="rate_my"):
             await context.send(embed=embed)
         except Exception as e:
             print(e)
-            embed = discord.Embed(description='Something went wrong', color=0xE02B2B)
+            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
             await context.send(embed=embed)
 
     @rate_my.command(
@@ -91,16 +91,30 @@ class rate_my(commands.Cog, name="rate_my"):
         name="new_item",
         description="adds a new item to rate.",
     )
-    async def add_item_to_database(self, context: Context) -> None:
+    @app_commands.describe(
+        name = 'the name of the thing to rate.',
+        category_name="The name of the category the thing belongs to.",
+        description="description of the thing.",
+        available_to_rate_date="date the thing is available to rate.",
+    )
+    async def add_item_to_database(self, context: Context, name, category_name, description = 'None Given',available_to_rate_date = '2020-01-01') -> None:
         """
         Adds a new item to rate to the database
 
         :param context: The application command context.
         """
-        
-        db_write.add_item_to_rate(context.guild.id, context.args)
-        
-        await context.send("Item added!")
+        guild_id = str(context.guild.id)
+        print(f'guild_id: {guild_id}, category_name: {category_name}, name: {name}, description: {description}, available_to_rate_date: {available_to_rate_date}')
+        confirmation = self.db_write.add_item_to_rate(guild_id, name, category_name, description, available_to_rate_date)
+        if confirmation == 'no category found':
+            embed = discord.Embed(description='Error in finding the category', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif confirmation == 'could not add item to rate':
+            embed = discord.Embed(description='Error in adding item to rate', color=0xE02B2B)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(description=f'Item {name} added to {category_name}', color=0x93C47D)
+            await context.send(embed=embed)
     
     @rate_my.command(
         name="thing",

@@ -9,12 +9,13 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
-
-GUILD_ID = discord.Object(1187481861912531004)
+from database.rate_my_db_calls import db_read, db_write
 
 class rate_my(commands.Cog, name="rate_my"):
     def __init__(self, bot) -> None:
         self.bot = bot
+        self.db_write = db_write()
+        self.db_read = db_read()
 
     @commands.hybrid_group(
             name="rate_my",
@@ -48,11 +49,42 @@ class rate_my(commands.Cog, name="rate_my"):
 
         :param context: The application command context.
         """
-        run = await self.bot.database.add_category(guild_id = context.guild.id, category_name = name, category_description = description)
+        try:
+            guild_id = context.guild.id
+            run = self.db_write.add_category(guild_id, name, description)
+        #db_write.add_category(self=self, guild_id = context.guild.id, category_name = name, category_description = description)
+        
+            embed = discord.Embed(description=f'Category {run} added', color=0x93C47D)
+            await context.send(embed=embed)
+        except Exception as e:
+            print(e)
+            embed = discord.Embed(description='Something went wrong', color=0xE02B2B)
+            await context.send(embed=embed)
+
+    @rate_my.command(
+        name="see_categories",
+        description="lists all categories.",
+    )
+    async def see_categories(self, context: Context) -> None:
+        """
+        Lists all categories
+
+        :param context: The application command context.
+        """
+        guild_id = context.guild.id
+        categories = self.db_read.get_categories(guild_id)
         
         embed = discord.Embed(
-            f'Category {run} added', color=0x93C47D
+            title="Categories",
+            description="",
+            color=0x93C47D,
         )
+        for category_name, category_description in categories:
+            embed.add_field(
+                name=f"{category_name}",
+                value=f"{category_description}",
+                inline=False,
+            )
         await context.send(embed=embed)
 
     @rate_my.command(
@@ -66,7 +98,7 @@ class rate_my(commands.Cog, name="rate_my"):
         :param context: The application command context.
         """
         
-        await self.bot.database.add_item_to_rate(context.guild.id, context.args)
+        db_write.add_item_to_rate(context.guild.id, context.args)
         
         await context.send("Item added!")
     
@@ -81,7 +113,7 @@ class rate_my(commands.Cog, name="rate_my"):
         :param context: The application command context.
         """
         
-        await self.bot.database.rate_item(context.guild.id, context.author.id, context.args)
+        db_write.rate_item(context.guild.id, context.author.id, context.args)
         
         await context.send("Item rated!")
 

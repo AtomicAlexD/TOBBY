@@ -18,7 +18,7 @@ class rate_my(commands.Cog, name="rate_my"):
         self.db_read = db_read()
 
     @commands.hybrid_group(
-            name="rate_my",
+            name="rate",
             description="A group of commands to rate things.",
             )
     async def rate_my(self, context: Context) -> None:
@@ -100,7 +100,6 @@ class rate_my(commands.Cog, name="rate_my"):
     async def add_item_to_database(self, context: Context, name, category_name, description = 'None Given',available_to_rate_date = '2020-01-01') -> None:
         """
         Adds a new item to rate to the database
-
         :param context: The application command context.
         """
         guild_id = str(context.guild.id)
@@ -143,7 +142,7 @@ class rate_my(commands.Cog, name="rate_my"):
                     name=f"{item_name}",
                     value=f"""Category: {category_name}
 Description: {description}
-If you want to rate this item, use the command /rate_my rate_item {item_id} with your rating (0-10)""",
+If you want to rate this item, use the command /rate rate_item {item_name} with your rating (0-10)""",
                     inline=False,
                 )
             await context.send(embed=embed)
@@ -153,10 +152,10 @@ If you want to rate this item, use the command /rate_my rate_item {item_id} with
         description="rates an item.",
     )
     @app_commands.describe(
-        item_id = 'the id of the item to rate.(use /rate_my what_can_i_rate to see available items)',
+        item_name = 'the name of the item to rate.(use /rate what_can_i_rate to see available items)',
         rating = 'the rating to give the item (0-10), decimals will be rounded down',
     )
-    async def rate_item(self, context: Context, item_id, rating) -> None:
+    async def rate_item(self, context: Context, item_name, rating) -> None:
         """
         Rates an item
 
@@ -165,22 +164,21 @@ If you want to rate this item, use the command /rate_my rate_item {item_id} with
         user_id = context.author.id
         guild_id = context.guild.id
         rating = int(rating)
-        item_id = int(item_id)
         if rating < 0 or rating > 10:
             await context.send("Rating must be between 0 and 10")
             return
-        print(f'guild_id: {guild_id}, user_id: {user_id}, item_id: {item_id}, rating: {rating}')
-        confirmation = self.db_write.rate_item(guild_id, user_id, item_id, rating)
+        print(f'guild_id: {guild_id}, user_id: {user_id}, item_name: {item_name}, rating: {rating}')
+        confirmation = self.db_write.rate_item(guild_id, user_id, item_name, rating)
         if confirmation == 'could not add rating':
             embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
             await context.send(embed=embed)
         elif confirmation == 'rating added':
-            embed = discord.Embed(description=f'Item {item_id} rated {rating}', color=0x93C47D)
+            embed = discord.Embed(description=f'Item {item_name} rated {rating}', color=0x93C47D)
             await context.send(embed=embed)
         else:
             embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
             await context.send(embed=embed)
-    
+
     @rate_my.command(
         name="view_my_ratings",
         description="lists all items you have rated.",
@@ -211,8 +209,105 @@ Rating: {rating}""",
                 )
             await context.send(embed=embed)
 
+    @rate_my.command(
+        name="update_rating",
+        description="updates a rating.",
+    )
+    @app_commands.describe(
+        item_name = 'the id of the item to update.(use /rate view_my_ratings to see available items)',
+        rating = 'the rating to give the item (0-10), decimals will be rounded down',
+    )
+    async def update_rating(self, context: Context, item_name, rating) -> None:
+        """
+        Updates a rating
 
-    
+        :param context: The application command context.
+        """
+        user_id = context.author.id
+        guild_id = context.guild.id
+        rating = int(rating)
+        if rating < 0 or rating > 10:
+            await context.send("Rating must be between 0 and 10")
+            return
+        confirmation = self.db_write.update_rating(guild_id, user_id, item_name, rating)
+        if confirmation == 'could not update rating':
+            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif confirmation == 'rating updated':
+            embed = discord.Embed(description=f'Item {item_name} updated to {rating}', color=0x93C47D)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+
+    @rate_my.command(
+        name="view_ratings",
+        description="lists all ratings for an item.",
+    )
+    @app_commands.describe(
+        item_name = 'the name of the item to view.(use /rate view_my_ratings to see available items)',
+    )
+    async def view_ratings(self, context: Context, item_name) -> None:
+        guild_id = context.guild.id
+        items = self.db_read.view_ratings(guild_id, item_name)
+        if items == 'could not get ratings':
+            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif items == []:
+            embed = discord.Embed(description='No items rated', color=0x93C47D)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(
+                title=f"Ratings for {items[0][0]}",
+                description="",
+                color=0x93C47D,
+            )
+            for w,rating, user_id in items:
+                user = self.bot.get_user(int(user_id)) or await self.bot.fetch_user(
+                int(user_id)
+            )
+                #change this to user / rating
+                embed.add_field(name=f'{user}:',
+                                value=rating,
+                                inline=False
+                                )
+            await context.send(embed=embed)
+
+    @rate_my.command(
+        name="view_items_by_category",
+        description="lists all items in a category.",
+    )
+    @app_commands.describe(
+        category_name = 'the name of the category to view.(use /rate see_categories to see available categories)',
+    )
+    async def view_items_by_category(self, context: Context, category_name) -> None:
+        guild_id = context.guild.id
+        items = self.db_read.view_items_by_category(guild_id, category_name)
+        if items == 'could not get items':
+            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif items == []:
+            embed = discord.Embed(description='No items found', color=0x93C47D)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(
+                title=f"Items in {category_name}",
+                description="",
+                color=0x93C47D,
+            )
+            for item_name, description,available_date , rating in items:
+                embed.add_field(
+                    name=f"{item_name}",
+                    value=f"""Description: {description}
+Available to rate: {available_date}
+Average Rating: {rating}""",
+                    inline=False,
+                )
+            await context.send(embed=embed)
+
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
 async def setup(bot) -> None:
     await bot.add_cog(rate_my(bot))
+
+
+# name="view_ratings_by_user",

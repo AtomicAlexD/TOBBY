@@ -7,19 +7,6 @@ class db_calls:
         self.conn = pyodbc.connect(self.db_connection_string)
         self.cursor = self.conn.cursor()
 
-    # def __enter__(self):
-    #     self.connection = pyodbc.connect(db_connection_string.value)
-    #     self.cursor = self.connection.cursor()
-    #     return self
-    
-    # def __exit__(self, exc_type, exc_val, exc_tb):
-    #     if exc_type is not None:
-    #         self.cursor.rollback()
-    #     else:
-    #         self.cursor.commit()
-    #     self.cursor.close()
-    #     self.connection.close()
-
 class db_read(db_calls):
     def __init__(self) -> None:
         super().__init__()
@@ -34,7 +21,6 @@ class db_read(db_calls):
             return None
 
     def get_items_to_rate(self, user_id: str, guild_id: str) -> list:
-        #print(f'user_id: {user_id}, guild_id: {guild_id}')
         # get a list of items that have not been rated by the user and are available to rate (based on date) for the guild
         try:
             self.cursor.execute('''SELECT itr.name
@@ -75,13 +61,55 @@ WHERE itr.guild_id = ?
             print(e)
             return 'error'
         
+    def view_ratings(self, guild_id: str, item_name: str) -> list:
+        try:
+            self.cursor.execute(
+                """SELECT itr.name, r.rating, r.user_id 
+                FROM ratings AS r
+                INNER JOIN items_to_rate AS itr
+                    ON r.item_id = itr.id
+                WHERE itr.guild_id=? AND itr.name=?""",
+                (
+                    guild_id,
+                    item_name
+                ),
+            )
+            ratings = self.cursor.fetchall()
+            return ratings
+        except Exception as e:
+            print(e)
+            return 'could not get ratings'
+        
+    def view_items_by_category(self, guild_id: str, category_name: str) -> list:
+        try:
+            self.cursor.execute(
+                """SELECT itr.name
+                    ,itr.description
+                    ,itr.available_to_rate_date
+                    ,AVG(r.rating) AS average_rating
+                FROM items_to_rate AS itr
+                INNER JOIN categories AS c
+                    ON itr.category_id = c.id
+                LEFT OUTER JOIN ratings AS r
+                    ON itr.id = r.item_id
+                WHERE itr.guild_id=? AND c.category_name=?
+                GROUP BY itr.name, itr.description, itr.available_to_rate_date""",
+                (
+                    guild_id,
+                    category_name
+                ),
+            )
+            items = self.cursor.fetchall()
+            return items
+        except Exception as e:
+            print(e)
+            return 'could not get items'
 
 class db_write(db_calls):
     def __init__(self) -> None:
         super().__init__()
 
     def add_category(self, guild_id: int, category_name: str, category_description: str) -> str:
-        #print(f'guild_id: {guild_id}, category_name: {category_name}, category_description: {category_description}')
         try:
             self.cursor.execute('INSERT INTO categories(guild_id, category_name, category_description) VALUES (?, ?, ?)',
                 (guild_id, category_name, category_description),
@@ -93,7 +121,6 @@ class db_write(db_calls):
         except Exception as e:
             print(e)
             return None
-    
 
     def add_item_to_rate(
         self, guild_id: str, item_name: str, category_name: str, description: str, available_to_rate_date: str
@@ -126,13 +153,15 @@ class db_write(db_calls):
             return 'could not add item to rate'
         return 'item added to rate'
 
-    def rate_item(self, guild_id: str, user_id: str, item_id: int, rating: int) -> None:
+    def rate_item(self, guild_id: str, user_id: str, item_name: str, rating: int) -> None:
         try:
+            self.cursor.execute('SELECT id FROM items_to_rate WHERE guild_id=? AND name=?', (guild_id, item_name))
+            item_id = self.cursor.fetchone()
             self.cursor.execute(
                 "INSERT INTO ratings(guild_id, item_id, user_id, rating) VALUES (?, ?, ?, ?)",
                 (
                     guild_id,
-                    item_id,
+                    item_id[0],
                     user_id,
                     rating
                 ),
@@ -142,3 +171,23 @@ class db_write(db_calls):
             print(e)
             return 'could not add rating'
         return 'rating added'
+
+    def update_rating(self, guild_id: str, user_id: str, item_name: str, rating: int) -> None:
+        try:
+            self.cursor.execute('SELECT id FROM items_to_rate WHERE guild_id=? AND name=?', (guild_id, item_name))
+            item_id = self.cursor.fetchone()
+            self.cursor.execute(
+                "UPDATE ratings SET rating=? WHERE guild_id=? AND item_id=? AND user_id=?",
+                (
+                    rating,
+                    guild_id,
+                    item_id[0],
+                    user_id
+                ),
+            )
+            self.cursor.commit()
+        except Exception as e:
+            print(e)
+            return 'could not update rating'
+        return 'rating updated'
+    

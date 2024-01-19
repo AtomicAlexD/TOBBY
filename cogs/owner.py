@@ -5,7 +5,7 @@ Description:
 
 Version: 6.1.0
 """
-
+import yaml
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -330,25 +330,21 @@ class Owner(commands.Cog, name="owner"):
         name="help", description="List all commands the bot has loaded."
     )
     async def help(self, context: Context) -> None:
-        prefix = self.bot.config["prefix"]
+        prefix = "/"
         embed = discord.Embed(
             title="Help", description="List of available commands:", color=0xBEBEFE
         )
-        for i in self.bot.cogs:
-            if i == "owner" and not (await self.bot.is_owner(context.author)):
-                continue
-            cog = self.bot.get_cog(i.lower())
-            commands = cog.get_commands()
-            data = []
-            for command in commands:
-                description = command.description.partition("\n")[0]
-                data.append(f"{prefix}{command.name} - {description}")
-            help_text = "\n".join(data)
-            embed.add_field(
-                name=i.capitalize(), value=f"```{help_text}```", inline=False
-            )
-        await context.send(embed=embed)
-
+        #load help_text.yaml
+        with open("help_text.yaml", "r") as f:
+            help_text = yaml.safe_load(f)
+        #add each command to embed
+        for cog in f:
+            for command in cog:
+                embed.add_field(
+                    name=f'{prefix}{cog} {command}',
+                    value=command.description,
+                    inline=False,
+                )
 
 async def setup(bot) -> None:
     await bot.add_cog(Owner(bot))

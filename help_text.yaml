@@ -1,0 +1,55 @@
+-- 
+cog: rate
+  command: new_category
+    help: |
+      adds a new category of things to rate.
+    usage: |
+      /rate new_category {category_name}
+
+  command: see_categories
+    help: |
+      lists all the categories of things you can rate.
+    usage: |
+      /rate see_categories
+
+  command: new_item
+    help: |
+      adds a new item to a category.
+    usage: |
+      /rate new_item {category_name} {item_name}
+
+  command: what_can_i_rate
+    help: |
+      lists all the items in any category currently available for rtating.
+    usage: |
+      /rate what_can_i_rate
+
+  command: rate_item
+    help: |
+      rates an item.
+    usage: |
+      /rate rate_item {item_name} {rating}
+
+  command: view_my_ratings
+    help: |
+      lists all the items you have rated.
+    usage: |
+      /rate view_my_ratings
+
+  command: update_rating
+    help: |
+      updates your rating for an item.
+    usage: |
+      /rate update_rating {item_name} {rating}
+
+  command: view_ratings
+    help: |
+      lists all the ratings for an item.
+    usage: |
+      /rate view_ratings {item_name}
+
+  command: view_items_by_category
+    help: |
+      lists all the items in a category.
+    usage: |
+      /rate view_items_by_category {category_name}

@@ -11,7 +11,6 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 
-
 class Owner(commands.Cog, name="owner"):
     def __init__(self, bot) -> None:
         self.bot = bot
@@ -330,21 +329,29 @@ class Owner(commands.Cog, name="owner"):
         name="help", description="List all commands the bot has loaded."
     )
     async def help(self, context: Context) -> None:
-        prefix = "/"
-        embed = discord.Embed(
-            title="Help", description="List of available commands:", color=0xBEBEFE
-        )
-        #load help_text.yaml
         with open("help_text.yaml", "r") as f:
             help_text = yaml.safe_load(f)
-        #add each command to embed
-        for cog in f:
-            for command in cog:
+        prefix = "/"
+        for module_name, module_info in help_text.items():
+            embed = discord.Embed(
+                title="Help", description="List of available commands:", color=0xBEBEFE
+            )
+            embed.add_field(
+                name=module_name,
+                value=module_info.get('description', 'No description available.'),
+                inline=False,
+            )
+            commands = module_info.get('commands', [])
+            for command in commands:
+                name = command['name']
+                help_text = command['help']
+                variables = command['required_variables']
                 embed.add_field(
-                    name=f'{prefix}{cog} {command}',
-                    value=command.description,
+                    name=f"{name}",
+                    value=f"{help_text}\nUsage: `{prefix}{module_name} {name} {variables}`",
                     inline=False,
                 )
+            await context.send(embed=embed)
 
 async def setup(bot) -> None:
     await bot.add_cog(Owner(bot))

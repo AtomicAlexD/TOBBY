@@ -1,0 +1,51 @@
+---
+rate:
+  description: Rate is a module that allows you to rate things. You can add new categories of things to rate, add new items to those categories, and rate those items. You can also see all the items you have rated, update your rating for an item, and see all the ratings for an item.
+  commands:
+    - 
+      name: new_category
+      help: adds a new category of things to rate.
+      required_variables: '{category_name}'
+    - 
+      name: see_categories
+      help: lists all the categories of things you can rate.
+      required_variables:
+    - 
+      name: new_item
+      help: adds a new item to a category.
+      required_variables: '{category_name} {item_name}'
+    - 
+      name: what_can_i_rate
+      help: lists all the items in any category currently available for rating.
+      required_variables: 
+    - 
+      name: rate_item
+      help: rates an item.
+      required_variables: '{item_name} {rating}'
+    - 
+      name: view_my_ratings
+      help: lists all the items you have rated.
+      required_variables: 
+    - 
+      name: update_rating
+      help: updates your rating for an item.
+      required_variables: '{item_name} {rating}'
+    - 
+      name: view_ratings
+      help: lists all the ratings for an item.
+      required_variables: '{item_name}'
+    - 
+      name: view_items_by_category
+      help: lists all the items in a category.
+      required_variables: '{category_name}'
+poll:
+  description: Poll is a module that allows you to create polls. You can create a new poll, add options to a poll, and vote on a poll.
+  commands:
+    - 
+      name: new_poll
+      help: creates a new poll.
+      required_variables: '{poll_name}'
+    - 
+      name: add_option
+      help: adds an option to a poll.
+      required_variables: '{poll_name} {option_name}'

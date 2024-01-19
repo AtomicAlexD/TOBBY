@@ -144,7 +144,7 @@ class DiscordBot(commands.Bot):
         self.database = None
 
     async def init_db(self) -> None:
-       database.initialize_db()
+        database.initialize_db()
 
     async def load_cogs(self) -> None:
         """

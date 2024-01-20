@@ -10,6 +10,7 @@ from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 from database.rate_my_db_calls import db_read, db_write
+from datetime import datetime
 
 class rate_my(commands.Cog, name="rate_my"):
     def __init__(self, bot) -> None:
@@ -27,13 +28,11 @@ class rate_my(commands.Cog, name="rate_my"):
 
         :param context: The application command context.
         """
-        
-        if context.invoked_subcommand is None:
-            embed = discord.Embed(
-                description='Please specify a subcommand.',
-                color=0xE02B2B,
-            )
-            await context.send(embed=embed)
+        # if no sub command, default to rate_item
+        if context.sub_command_passed is None:
+            await self.rate_item(context)
+        else:
+            await context.send_help(context.command)
 
     @rate_my.command(
         name="new_category",
@@ -97,11 +96,14 @@ class rate_my(commands.Cog, name="rate_my"):
         description="description of the thing.",
         available_to_rate_date="date the thing is available to rate.",
     )
-    async def add_item_to_database(self, context: Context, name, category_name, description = 'None Given',available_to_rate_date = '2020-01-01') -> None:
+    async def add_item_to_database(self, context: Context, name, category_name, description = 'None Given',available_to_rate_date = None) -> None:
         """
         Adds a new item to rate to the database
         :param context: The application command context.
         """
+        if available_to_rate_date == None:
+            now = datetime.now()
+            available_to_rate_date = now.strftime("%Y-%m-%d %H:%M:%S")
         guild_id = str(context.guild.id)
         confirmation = self.db_write.add_item_to_rate(guild_id, name, category_name, description, available_to_rate_date)
         if confirmation == 'no category found':
@@ -152,10 +154,10 @@ If you want to rate this item, use the command /rate rate_item {item_name} with 
         description="rates an item.",
     )
     @app_commands.describe(
-        item_name = 'the name of the item to rate.(use /rate what_can_i_rate to see available items)',
         rating = 'the rating to give the item (0-10), decimals will be rounded down',
+        item_name = 'the name of the item to rate.(use /rate what_can_i_rate to see available items)',
     )
-    async def rate_item(self, context: Context, item_name, rating) -> None:
+    async def rate_item(self, context: Context, rating, item_name=None) -> None:
         """
         Rates an item
 
@@ -164,10 +166,18 @@ If you want to rate this item, use the command /rate rate_item {item_name} with 
         user_id = context.author.id
         guild_id = context.guild.id
         rating = int(rating)
-        if rating < 0 or rating > 10:
-            await context.send("Rating must be between 0 and 10")
+        if item_name == None:
+            #grab most recently available item in the guild 
+            item_name = self.db_read.get_most_recent_item(guild_id)
+        # check user hasnt already rated this item 
+        if self.db_read.check_user_has_rated_item(guild_id, user_id, item_name) == True:
+            embed = discord.Embed(description='You have already rated this item, use update instead', color=0xE02B2B)
+            await context.send(embed=embed)
             return
-        print(f'guild_id: {guild_id}, user_id: {user_id}, item_name: {item_name}, rating: {rating}')
+        if rating < 0 or rating > 10:
+            embed = discord.Embed(description='Rating must be between 0 and 10', color=0xE02B2B)
+            await context.send(embed=embed)
+            return
         confirmation = self.db_write.rate_item(guild_id, user_id, item_name, rating)
         if confirmation == 'could not add rating':
             embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)

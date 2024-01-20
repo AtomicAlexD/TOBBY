@@ -3,7 +3,7 @@ import pyodbc
 
 class db_calls:
     def __init__(self) -> None:
-        self.db_connection_string = 'Driver={ODBC Driver 17 for SQL Server};Server=localhost;Database=poll;trusted_connection=yes;'
+        self.db_connection_string = 'Driver={ODBC Driver 17 for SQL Server};Server=localhost;Database=tobby;trusted_connection=yes;'
         self.conn = pyodbc.connect(self.db_connection_string)
         self.cursor = self.conn.cursor()
 

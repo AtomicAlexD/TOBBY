@@ -38,8 +38,6 @@ schema:
             primary_key: true
           - name: guild_id
             type: VARCHAR(32)
-            foreign_key: true
-            references: guilds.guild.id
           - name: name
             type: varchar(255)
             nullable: false
@@ -57,8 +55,6 @@ schema:
             primary_key: true
           - name: category_id
             type: INT
-            foreign_key: true
-            references: ratings.category.id
           - name: name
             type: varchar(255)
             nullable: false
@@ -80,14 +76,10 @@ schema:
             primary_key: true
           - name: item_id
             type: INT
-            foreign_key: true
-            references: ratings.item.id
           - name: rating
             type: INT
           - name: user_id
-            type: INT
-            foreign_key: true
-            references: users.user.id
+            type: VARCHAR(32)
           - name: created_at
             type: DATETIME2
             nullable: false

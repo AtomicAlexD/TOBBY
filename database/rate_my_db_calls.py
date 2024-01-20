@@ -22,11 +22,13 @@ class db_read(db_calls):
     
     def get_most_recent_item(self, guild_id: int) -> str:
         try:
-            sql = '''SELECT TOP (1) [name]
-FROM ratings.item
-WHERE guild_id = ?
-AND available_to_rate_date < GETDATE()
-ORDER BY available_to_rate_date DESC'''
+            sql = '''SELECT TOP (1) ri.[name]
+FROM ratings.item AS ri
+INNER JOIN ratings.category AS rc
+    ON ri.category_id = rc.id
+WHERE rc.guild_id = ?
+AND ri.available_to_rate_date < GETDATE()
+ORDER BY ri.available_to_rate_date DESC'''
             self.cursor.execute(sql,(guild_id))
             item = self.cursor.fetchone()
             return item[0]
@@ -72,7 +74,7 @@ INNER JOIN ratings.category AS rc
 LEFT OUTER JOIN ratings.rating AS rr 
     ON ri.id = rr.item_id
     AND rr.user_id = ?
-WHERE ri.guild_id = ?
+WHERE rc.guild_id = ?
     AND rr.id IS NULL
     AND ri.available_to_rate_date < GETDATE()''', (user_id,guild_id))
             items = self.cursor.fetchall()
@@ -107,7 +109,9 @@ WHERE rc.guild_id = ?
                 FROM ratings.rating AS r
                 INNER JOIN ratings.item AS ri
                     ON r.item_id = ri.id
-                WHERE ri.guild_id=? AND ri.name=?""",
+                INNER JOIN ratings.category AS rc
+                    ON ri.category_id = rc.id
+                WHERE rc.guild_id=? AND ri.name=?""",
                 (
                     guild_id,
                     item_name
@@ -214,7 +218,7 @@ class db_write(db_calls):
             self.cursor.execute('SELECT ri.id FROM ratings.item AS ri INNER JOIN ratings.category AS rc ON ri.category_id = rc.id WHERE rc.guild_id=? AND ri.name=?', (guild_id, item_name))
             item_id = self.cursor.fetchone()
             self.cursor.execute(
-                "UPDATE ratings SET rating=? WHERE item_id=? AND user_id=?",
+                "UPDATE ratings.rating SET rating=? WHERE item_id=? AND user_id=?",
                 (
                     rating,
                     item_id[0],

@@ -18,6 +18,44 @@ class rate_my(commands.Cog, name="rate_my"):
         self.db_write = db_write()
         self.db_read = db_read()
 
+    @commands.hybrid_command(
+        name="rate_it",
+        description="Rate the most recenly avaliable item.",
+    )
+    @app_commands.describe(
+        rating = 'the rating to give the item (0-10), decimals will be rounded down',
+    )
+    async def rate(self, context: Context, rating) -> None:
+        """
+        Rates an item
+
+        :param context: The application command context.
+        """
+        user_id = context.author.id
+        guild_id = context.guild.id
+        rating = int(rating)
+        if rating < 0 or rating > 10:
+            embed = discord.Embed(description='Rating must be between 0 and 10', color=0xE02B2B)
+            await context.send(embed=embed)
+            return
+        #grab most recently available item in the guild 
+        item_name = self.db_read.get_most_recent_item(guild_id)
+        # check user hasnt already rated this item 
+        if self.db_read.check_user_has_rated_item(guild_id, user_id, item_name) == True:
+            embed = discord.Embed(description='You have already rated this item, use update instead', color=0xE02B2B)
+            await context.send(embed=embed)
+            return
+        confirmation = self.db_write.rate_item(guild_id, user_id, item_name, rating)
+        if confirmation == 'could not add rating':
+            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif confirmation == 'rating added':
+            embed = discord.Embed(description=f'Item {item_name} rated {rating}', color=0x93C47D)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+
     @commands.hybrid_group(
             name="rate",
             description="A group of commands to rate things.",
@@ -29,10 +67,6 @@ class rate_my(commands.Cog, name="rate_my"):
         :param context: The application command context.
         """
         # if no sub command, default to rate_item
-        if context.sub_command_passed is None:
-            await self.rate_item(context)
-        else:
-            await context.send_help(context.command)
 
     @rate_my.command(
         name="new_category",

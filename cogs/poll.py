@@ -19,84 +19,40 @@ class poll(commands.Cog, name="poll"):
         self.db_write = db_write()
         self.db_read = db_read()
 
-    @commands.hybrid_group(
+    @commands.hybrid_command(
         name="poll",
-        description="A group of commands to set up and vote on things.",
-    )
-    async def poll(self, context: Context) -> None:
-        """
-        A group of commands to rate things.
-
-        :param context: The application command context.
-        """
-
-        if context.invoked_subcommand is None:
-            embed = discord.Embed(
-                description="Please specify a subcommand.",
-                color=0xE02B2B,
-            )
-            await context.send(embed=embed)
-
-    @poll.command(
-        name="new_poll",
-        description="adds a new poll, can specify start and end times for voting.",
+        description="adds a new poll",
     )
     @app_commands.describe(
-        name="The name of the new poll.",
+        question="The name of the new poll.",
         options="all options for the new poll separated by commas.",
-        start_time="The time the poll should start.(defaults to now)",
-        end_time="The time the poll should end.(defaults to 24 hours from now)",
     )
-    async def add_new_poll_with_options(
-        self,
-        context: Context,
-        name,
-        options=["none"],
-        start_time=None,
-        end_time=None,
-    ) -> None:
-        """ """
-        if start_time is None:
-            start_time = datetime.now()
-        else:
-            start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M")
-        if end_time is None:
-            end_time = datetime.now() + timedelta(hours=24)
-        else:
-            end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M")
-        try:
-            guild_id = context.guild.id
-            add_poll = self.db_write.add_poll(guild_id, name,start_time,end_time)  # returns poll_id
-            if add_poll is None:
-                embed = discord.Embed(
-                    description="Could'nt create Poll... Blame Alex", color=0xE02B2B
-                )
-                await context.send(embed=embed)
-            else:
-                try:
-                    poll_id = add_poll
-                    for option in options:
-                        self.db_write.add_option_to_poll(poll_id, option)
-                except Exception as e:
-                    print(e)
-                    embed = discord.Embed(
-                        description="Couldn't add options to poll... Blame Alex", color=0xE02B2B
-                    )
-                    await context.send(embed=embed)
-                embed = discord.Embed(description=f"Poll {name} added", color=0x93C47D)
-                await context.send(embed=embed)
-        except Exception as e:
-            print(e)
-            embed = discord.Embed(
-                description="Something went wrong... Blame Alex", color=0xE02B2B
-            )
+    async def poll(self, context: Context, question, options: str):
+        options = options.split(',')
+        if len(options) <= 1:
+            embed = discord.Embed(title='Error!', description='You need more than one option to make a poll!', color=0xE02B2B)
             await context.send(embed=embed)
+            return
+        if len(options) > 10:
+            embed = discord.Embed(title='Error!', description='You cannot make a poll for more than 10 things!', color=0xE02B2B)
+            await context.send(embed=embed)
+            return
+        
+        if len(options) == 2 and options[0] == 'yes' and options[1] == 'no':
+            reactions = ['✅', '❌']
+        else:
+            reactions = ['1⃣', '2⃣', '3⃣', '4⃣', '5⃣', '6⃣', '7⃣', '8⃣', '9⃣', '🔟']
 
-
+        description = []
+        for x, option in enumerate(options):
+            description += '\n {} {}'.format(reactions[x], option)
+        embed = discord.Embed(title=question, description=''.join(description))
+        react_message = await context.send(embed=embed)
+        for reaction in reactions[:len(options)]:
+            await react_message.add_reaction(reaction)
+        embed.set_footer(text='Poll ID: {}'.format(react_message.id))
+        await react_message.edit(embed=embed)
 
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
 async def setup(bot) -> None:
     await bot.add_cog(poll(bot))
-
-
-# name="view_ratings_by_user",

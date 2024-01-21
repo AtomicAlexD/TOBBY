@@ -5,18 +5,17 @@ Description:
 
 Version: 6.1.0
 """
-
+import yaml
 import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
 
-
 class Owner(commands.Cog, name="owner"):
     def __init__(self, bot) -> None:
         self.bot = bot
 
-    @commands.command(
+    @commands.hybrid_command(
         name="sync",
         description="Synchonizes the slash commands.",
     )
@@ -330,25 +329,36 @@ class Owner(commands.Cog, name="owner"):
         name="help", description="List all commands the bot has loaded."
     )
     async def help(self, context: Context) -> None:
-        prefix = self.bot.config["prefix"]
-        embed = discord.Embed(
-            title="Help", description="List of available commands:", color=0xBEBEFE
-        )
-        for i in self.bot.cogs:
-            if i == "owner" and not (await self.bot.is_owner(context.author)):
-                continue
-            cog = self.bot.get_cog(i.lower())
-            commands = cog.get_commands()
-            data = []
-            for command in commands:
-                description = command.description.partition("\n")[0]
-                data.append(f"{prefix}{command.name} - {description}")
-            help_text = "\n".join(data)
-            embed.add_field(
-                name=i.capitalize(), value=f"```{help_text}```", inline=False
+        with open("help_text.yaml", "r") as f:
+            help_text = yaml.safe_load(f)
+        prefix = "/"
+        for module_name, module_info in help_text.items():
+            embed = discord.Embed(
+                title="Help", description="List of available commands:", color=0xBEBEFE
             )
-        await context.send(embed=embed)
-
+            embed.add_field(
+                name=module_name,
+                value=module_info.get('description', 'No description available.'),
+                inline=False,
+            )
+            commands = module_info.get('commands', [])
+            for command in commands:
+                name = command['name']
+                help_text = command['help']
+                variables = command['required_variables']
+                if name == None:
+                    embed.add_field(
+                    name="",
+                    value=f"Usage: `{prefix}{module_name} {variables}`",
+                    inline=False,
+                )
+                else: 
+                    embed.add_field(
+                        name=f"{name}",
+                        value=f"{help_text}\nUsage: `{prefix}{module_name} {name} {variables}`",
+                        inline=False,
+                    )
+            await context.send(embed=embed)
 
 async def setup(bot) -> None:
     await bot.add_cog(Owner(bot))

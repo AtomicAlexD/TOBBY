@@ -144,7 +144,7 @@ class DiscordBot(commands.Bot):
         self.database = None
 
     async def init_db(self) -> None:
-       database.initialize_db()
+        database.initialize_db()
 
     async def load_cogs(self) -> None:
         """
@@ -283,6 +283,9 @@ class DiscordBot(commands.Bot):
 
 
 load_dotenv()
-
+dev = True
 bot = DiscordBot()
-bot.run(os.getenv("TOKEN"))
+if dev == True:
+    bot.run(os.getenv("DEV_TOKEN"))
+else:
+    bot.run(os.getenv("TOKEN"))

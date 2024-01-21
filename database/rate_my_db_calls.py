@@ -19,6 +19,43 @@ class db_read(db_calls):
         except Exception as e:
             print(e)
             return None
+    
+    def get_most_recent_item(self, guild_id: int) -> str:
+        try:
+            sql = '''SELECT TOP (1) [name]
+FROM items_to_rate
+WHERE guild_id = ?
+AND available_to_rate_date < GETDATE()
+ORDER BY available_to_rate_date DESC'''
+            self.cursor.execute(sql,(guild_id))
+            item = self.cursor.fetchone()
+            return item[0]
+        except Exception as e:
+            print(e)
+            return None
+    
+    def check_user_has_rated_item(self, guild_id: str, user_id: str, item_name: str) -> bool:
+        try:
+            self.cursor.execute(
+                """SELECT r.id
+                FROM ratings AS r
+                INNER JOIN items_to_rate AS itr
+                    ON r.item_id = itr.id
+                WHERE itr.guild_id=? AND itr.name=? AND r.user_id=?""",
+                (
+                    guild_id,
+                    item_name,
+                    user_id
+                ),
+            )
+            rating = self.cursor.fetchone()
+            if rating is None:
+                return False
+            else:
+                return True
+        except Exception as e:
+            print(e)
+            return False
 
     def get_items_to_rate(self, user_id: str, guild_id: str) -> list:
         # get a list of items that have not been rated by the user and are available to rate (based on date) for the guild

@@ -52,10 +52,18 @@ class poll(commands.Cog, name="poll"):
         context: Context,
         name,
         options=["none"],
-        start_time=datetime.now,
-        end_time=datetime.now + timedelta(hours=24),
+        start_time=None,
+        end_time= None,
     ) -> None:
         """ """
+        if start_time is None:
+            start_time = datetime.now()
+        else:
+            start_time = datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        if end_time is None:
+            end_time = start_time + timedelta(hours=24)
+        else:
+            end_time = datetime.strptime(end_time, "%Y-%m-%d %H:%M:%S")
         try:
             guild_id = context.guild.id
             add_poll = self.db_write.add_poll(guild_id, name,start_time,end_time)  # returns poll_id

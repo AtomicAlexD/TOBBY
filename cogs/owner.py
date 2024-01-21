@@ -346,11 +346,18 @@ class Owner(commands.Cog, name="owner"):
                 name = command['name']
                 help_text = command['help']
                 variables = command['required_variables']
-                embed.add_field(
-                    name=f"{name}",
-                    value=f"{help_text}\nUsage: `{prefix}{module_name} {name} {variables}`",
+                if name == None:
+                    embed.add_field(
+                    name="",
+                    value=f"Usage: `{prefix}{module_name} {variables}`",
                     inline=False,
                 )
+                else: 
+                    embed.add_field(
+                        name=f"{name}",
+                        value=f"{help_text}\nUsage: `{prefix}{module_name} {name} {variables}`",
+                        inline=False,
+                    )
             await context.send(embed=embed)
 
 async def setup(bot) -> None:

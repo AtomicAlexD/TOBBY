@@ -12,9 +12,9 @@ import os
 import platform
 import random
 import sys
-
-#import aiosqlite
+import yaml
 import discord
+
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
 from dotenv import load_dotenv
@@ -26,6 +26,9 @@ if not os.path.isfile(f"{os.path.realpath(os.path.dirname(__file__))}/config.jso
 else:
     with open(f"{os.path.realpath(os.path.dirname(__file__))}/config.json") as file:
         config = json.load(file)
+
+with open('database/db_config.yaml') as f:
+    db_config = yaml.safe_load(f)
 
 """	
 Setup bot intents (events restrictions)
@@ -141,10 +144,10 @@ class DiscordBot(commands.Bot):
         """
         self.logger = logger
         self.config = config
-        self.database = None
+        self.database = database.DatabaseCreator(db_config)
 
     async def init_db(self) -> None:
-        database.initialize_db()
+        self.database.create_database()
 
     async def load_cogs(self) -> None:
         """

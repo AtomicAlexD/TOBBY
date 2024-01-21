@@ -1,0 +1,123 @@
+--- 
+database_name: tobby
+schema:
+  - name: users
+    tables:
+      - name: user
+        columns:
+          - name: id
+            type: INT
+            primary_key: true
+            nullable: false
+          - name: user_id
+            type: VARCHAR(32)
+            nullable: false
+          - name: user_name
+            type: varchar(255)
+            nullable: true
+  - name: guilds
+    tables:
+      - name: guild
+        columns:
+          - name: id
+            type: INT
+            primary_key: true
+            nullable: false
+          - name: guild_name
+            type: varchar(255)
+            nullable: true
+          - name: guild_id
+            type: VARCHAR(32)
+            nullable: false
+  - name: ratings
+    tables:
+      - name: category
+        columns:
+          - name: id
+            type: INT
+            primary_key: true
+          - name: guild_id
+            type: VARCHAR(32)
+          - name: name
+            type: varchar(255)
+            nullable: false
+          - name: description
+            type: varchar(4000)
+            nullable: true
+          - name: created_at
+            type: DATETIME2
+            nullable: false
+            default: GETDATE()
+      - name: item
+        columns:
+          - name: id
+            type: INT
+            primary_key: true
+          - name: category_id
+            type: INT
+          - name: name
+            type: varchar(255)
+            nullable: false
+          - name: description
+            type: varchar(4000)
+            nullable: true
+          - name: available_to_rate_date
+            type: DATETIME2
+            nullable: false
+            default: GETDATE()
+          - name: created_at
+            type: DATETIME2
+            nullable: false
+            default: GETDATE()
+      - name: rating
+        columns:
+          - name: id
+            type: INT
+            primary_key: true
+          - name: item_id
+            type: INT
+          - name: rating
+            type: INT
+          - name: user_id
+            type: VARCHAR(32)
+          - name: created_at
+            type: DATETIME2
+            nullable: false
+            default: GETDATE()
+  - name: poll
+    tables:
+      - name: polls
+        columns:
+          - name: poll_id
+            type: INT
+            primary_key: true
+          - name: poll_name
+            type: varchar(255)
+          - name: user_id
+            type: INT
+            foreign_key: true
+            references: users.user_id
+      - name: options
+        columns:
+          - name: option_id
+            type: INT
+            primary_key: true
+          - name: option_name
+            type: varchar(255)
+          - name: poll_id
+            type: INT
+            foreign_key: true
+            references: polls.poll_id
+      - name: votes
+        columns:
+          - name: vote_id
+            type: INT
+            primary_key: true
+          - name: option_id
+            type: INT
+            foreign_key: true
+            references: options.option_id
+          - name: user_id
+            type: INT
+            foreign_key: true
+            references: users.user_id

@@ -1,58 +1,40 @@
 ---
-rate_it:
-  description: Smartly rate the most recently avaliable item in the discord server.
-  commands:
-    - 
-      name:
-      help: Smartly rate the most recently avaliable item in the discord server.
-      required_variables: '{rating}'
 rate:
-  description: Rate is a module that allows you to rate things. You can add new categories of things to rate, add new items to those categories, and rate those items. You can also see all the items you have rated, update your rating for an item, and see all the ratings for an item.
+  description: Rate is a module that allows you to rate things. You can add new categories of things to rate, add new items to those categories, and rate those items. You can also see all the items you have rated, and see all the ratings for an item.
   commands:
-    - 
-      name: new_category
-      help: adds a new category of things to rate.
-      required_variables: '{category_name}'
-    - 
-      name: see_categories
-      help: lists all the categories of things you can rate.
-      required_variables:
-    - 
-      name: new_item
-      help: adds a new item to a category.
-      required_variables: '{category_name} {item_name}'
-    - 
-      name: what_can_i_rate
+    - name: item
+      help: Starts a DM with the bot to rate an item. Default picks the most recent item available to rate.
+      required_variables: '{item_name} (optional)'
+    - name: what_can_i_rate
       help: lists all the items in any category currently available for rating.
       required_variables: 
-    - 
-      name: rate_item
-      help: rates an item.
-      required_variables: '{item_name} {rating}'
-    - 
-      name: view_my_ratings
+    - name: view_my_ratings
       help: lists all the items you have rated.
       required_variables: 
-    - 
-      name: update_rating
-      help: updates your rating for an item.
-      required_variables: '{item_name} {rating}'
-    - 
-      name: view_ratings
+    - name: view_ratings
       help: lists all the ratings for an item.
       required_variables: '{item_name}'
-    - 
-      name: view_items_by_category
+    - name: view_items_by_category
       help: lists all the items in a category.
       required_variables: '{category_name}'
+    - name: see_metrics
+      help: lists all the metrics for a category.
+      required_variables: '{category_name}'
+    - name: see_categories
+      help: lists all the categories of things you can rate.
+      required_variables:
+#    - name: new_metric
+#      help: adds a new metric to a category.
+#      required_variables: '{category_name} {metric_name}'
+  #  - name: new_item
+  #    help: adds a new item to a category.
+  #    required_variables: '{category_name} {item_name}'
+#    - name: new_category
+#      help: adds a new category of things to rate, also adds a default metric called 'overall'. You can add more metrics to a category with the 'new_metric' command.
+#      required_variables: '{category_name}'
 poll:
-  description: Poll is a module that allows you to create polls. You can create a new poll, add options to a poll, and vote on a poll.
+  description: Creates a new poll, options will be separated by commas.
   commands:
-    - 
-      name: new_poll
-      help: creates a new poll.
-      required_variables: '{poll_name}'
-    - 
-      name: add_option
-      help: adds an option to a poll.
-      required_variables: '{poll_name} {option_name}'
+    - name: 
+      help: creates a new poll, options will be separated by commas.
+      required_variables: '{question} {options}'

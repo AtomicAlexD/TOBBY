@@ -18,44 +18,6 @@ class rate_my(commands.Cog, name="rate_my"):
         self.db_write = db_write()
         self.db_read = db_read()
 
-    @commands.hybrid_command(
-        name="rate_it",
-        description="Rate the most recenly avaliable item.",
-    )
-    @app_commands.describe(
-        rating = 'the rating to give the item (0-10), decimals will be rounded down',
-    )
-    async def rate(self, context: Context, rating) -> None:
-        """
-        Rates an item
-
-        :param context: The application command context.
-        """
-        user_id = context.author.id
-        guild_id = context.guild.id
-        rating = int(rating)
-        if rating < 0 or rating > 10:
-            embed = discord.Embed(description='Rating must be between 0 and 10', color=0xE02B2B)
-            await context.send(embed=embed)
-            return
-        #grab most recently available item in the guild 
-        item_name = self.db_read.get_most_recent_item(guild_id)
-        # check user hasnt already rated this item 
-        if self.db_read.check_user_has_rated_item(guild_id, user_id, item_name) == True:
-            embed = discord.Embed(description='You have already rated this item, use update instead', color=0xE02B2B)
-            await context.send(embed=embed)
-            return
-        confirmation = self.db_write.rate_item(guild_id, user_id, item_name, rating)
-        if confirmation == 'could not add rating':
-            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
-            await context.send(embed=embed)
-        elif confirmation == 'rating added':
-            embed = discord.Embed(description=f'Item {item_name} rated {rating}', color=0x93C47D)
-            await context.send(embed=embed)
-        else:
-            embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
-            await context.send(embed=embed)
-
     @commands.hybrid_group(
             name="rate",
             description="A group of commands to rate things.",
@@ -66,17 +28,17 @@ class rate_my(commands.Cog, name="rate_my"):
 
         :param context: The application command context.
         """
-        # if no sub command, default to rate_item
 
     @rate_my.command(
         name="new_category",
-        description="adds a new category of things to rate.",
+        description="adds a new category of things to rate, with a default overall metric.",
     )
     @app_commands.describe(
         name="The name of the new category.",
         description="description of the category.",
+        metrics="the metrics to rate the category with, seperated by a comma. (default is overall and will always be added)",
     )
-    async def add_category_to_database(self, context: Context, name , description = 'none') -> None:
+    async def add_category_to_database(self, context: Context, name , description = None, metrics:str=None) -> None:
         """
         Adds a new category of things to rate to the database
 
@@ -84,14 +46,88 @@ class rate_my(commands.Cog, name="rate_my"):
         """
         try:
             guild_id = context.guild.id
-            run = self.db_write.add_category(guild_id, name, description)
-        #db_write.add_category(self=self, guild_id = context.guild.id, category_name = name, category_description = description)
-        
-            embed = discord.Embed(description=f'Category {run} added', color=0x93C47D)
+            category, metric, category_id = self.db_write.add_category(guild_id, name, description)
+            embed = discord.Embed(description=f'Category: {category} added, with {metric} metric', color=0x93C47D)
             await context.send(embed=embed)
         except Exception as e:
             print(e)
             embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+        if metrics != None:
+            metrics = metrics.split(',')
+            for metric in metrics:
+                try:
+                    self.db_write.add_metric(category_id=category_id, metric_name=metric, metric_description=metric)
+                    embed = discord.Embed(description=f'Metric: {metric} added to {category}', color=0x93C47D)
+                except Exception as e:
+                    print(e)
+                    embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+                    await context.send(embed=embed)
+
+    @rate_my.command(
+        name="see_metrics",
+        description="lists all metrics for a category.",
+    )
+    @app_commands.describe(
+        category_name="The name of the category to see metrics for.",
+    )
+    async def see_metrics(self, context: Context, category_name) -> None:
+        """
+        Lists all metrics for a category
+
+        :param context: The application command context.
+        """
+        guild_id = context.guild.id
+        metrics = self.db_read.get_metrics(guild_id, category_name)
+        if metrics == 'no category found':
+            embed = discord.Embed(description='Error in finding the category', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif metrics == 'no metrics found':
+            embed = discord.Embed(description='No metrics found', color=0x93C47D)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(
+                title=f"Metrics for {category_name}",
+                description="",
+                color=0x93C47D,
+            )
+            for metric_name, metric_description in metrics:
+                embed.add_field(
+                    name=f"{metric_name}",
+                    value=f"{metric_description}",
+                    inline=False,
+                )
+            await context.send(embed=embed)
+
+    @rate_my.command(
+        name="new_metric",
+        description="adds a new metric to a category.",
+    )
+    @app_commands.describe(
+        category_name="The name of the category to add a metric to.",
+        metric_name="The name of the new metric.",
+        metric_description="description of the metric.",
+    )
+    async def add_metric_to_database(self, context: Context, category_name, metric_name, metric_description = None) -> None:
+        """
+        Adds a new metric to a category
+
+        :param context: The application command context.
+        """
+        guild_id = context.guild.id
+        category_id = self.db_read.get_category_id(guild_id, category_name)
+        if category_id == 'could not get category id':
+            embed = discord.Embed(description='Error in finding the category', color=0xE02B2B)
+            await context.send(embed=embed)
+        confirmation = self.db_write.add_metric(category_id, metric_name, metric_description)
+        if confirmation == 'could not add metric':
+            embed = discord.Embed(description='Error in adding metric', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif confirmation == metric_name:
+            embed = discord.Embed(description=f'Metric: {metric_name} added to {category_name}', color=0x93C47D)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
             await context.send(embed=embed)
 
     @rate_my.command(
@@ -112,10 +148,11 @@ class rate_my(commands.Cog, name="rate_my"):
             description="",
             color=0x93C47D,
         )
-        for category_name, category_description in categories:
+        for category_name, category_description, metric_count in categories:
             embed.add_field(
                 name=f"{category_name}",
-                value=f"{category_description}",
+                value=f"""Description: {category_description}
+Count of Metrics: {metric_count}""",
                 inline=False,
             )
         await context.send(embed=embed)
@@ -178,50 +215,79 @@ class rate_my(commands.Cog, name="rate_my"):
                     name=f"{item_name}",
                     value=f"""Category: {category_name}
 Description: {description}
-If you want to rate this item, use the command /rate rate_item {item_name} with your rating (0-10)""",
+If you want to rate this item, use the command /rate item {item_name}""",
                     inline=False,
                 )
             await context.send(embed=embed)
 
     @rate_my.command(
-        name="rate_item",
+        name="item",
         description="rates an item.",
     )
     @app_commands.describe(
-        rating = 'the rating to give the item (0-10), decimals will be rounded down',
         item_name = 'the name of the item to rate.(use /rate what_can_i_rate to see available items)',
     )
-    async def rate_item(self, context: Context, rating, item_name=None) -> None:
+    async def rate_item(self, context: Context, item_name=None) -> None:
         """
-        Rates an item
-
-        :param context: The application command context.
+        Start a DM with the user to rate each metric for an item
         """
         user_id = context.author.id
         guild_id = context.guild.id
-        rating = int(rating)
         if item_name == None:
             #grab most recently available item in the guild 
             item_name = self.db_read.get_most_recent_item(guild_id)
+        category_id = self.db_read.get_category_id_of_item(guild_id, item_name)
         # check user hasnt already rated this item 
-        if self.db_read.check_user_has_rated_item(guild_id, user_id, item_name) == True:
+        metrics = self.db_read.get_metrics_for_item(guild_id, category_id)
+        if metrics == 'could not get metrics':
+            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+            return
+        user_ratings = self.db_read.get_user_ratings_for_item(guild_id, user_id, item_name)
+        if len(metrics) == len(user_ratings):
             embed = discord.Embed(description='You have already rated this item, use update instead', color=0xE02B2B)
             await context.send(embed=embed)
             return
-        if rating < 0 or rating > 10:
-            embed = discord.Embed(description='Rating must be between 0 and 10', color=0xE02B2B)
-            await context.send(embed=embed)
-            return
-        confirmation = self.db_write.rate_item(guild_id, user_id, item_name, rating)
-        if confirmation == 'could not add rating':
-            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
-            await context.send(embed=embed)
-        elif confirmation == 'rating added':
-            embed = discord.Embed(description=f'Item {item_name} rated {rating}', color=0x93C47D)
-            await context.send(embed=embed)
-        else:
-            embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
-            await context.send(embed=embed)
+        embed = discord.Embed(description=f'sending you a dm', color=0x93C47D)
+        await context.send(embed=embed)
+        #start dm with user
+        dm_channel = await context.author.create_dm()
+        embed = discord.Embed(description=f'The following messages are for **{item_name}**', color=0x93C47D)
+        await dm_channel.send(embed=embed)
+        for metric_name, metric_description, metric_id in metrics:
+            # check user hasnt already rated this metric
+            if metric_name in user_ratings:
+                continue
+            # send dm to user
+            embed = discord.Embed(description=f'Please rate **{metric_name}** on a scale of 0 to 10', color=0x93C47D)
+            embed.add_field(
+                name=f"Description:",
+                value=f"{metric_description}",
+                inline=False,
+            )
+            await dm_channel.send(embed=embed)
+            # wait for user to respond
+            def check(m):
+                return m.author == context.author and m.channel == dm_channel
+            msg = await self.bot.wait_for('message', check=check)
+            rating = int(msg.content)
+            if rating < 0 or rating > 10:
+                embed = discord.Embed(description='Rating must be between 0 and 10', color=0xE02B2B)
+                await dm_channel.send(embed=embed)
+                return
+            confirmation = self.db_write.rate_item(guild_id, user_id, item_name, rating, metric_name)
+            if confirmation == 'could not add rating':
+                embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+                await dm_channel.send(embed=embed)
+            elif confirmation == 'rating added':
+                embed = discord.Embed(description=f'Item {item_name}: {metric_name} rated {rating}', color=0x93C47D)
+                await dm_channel.send(embed=embed)
+            else:
+                embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
+                await dm_channel.send(embed=embed)
+        embed = discord.Embed(description=f'All metrics for **{item_name}** rated', color=0x93C47D)
+        await dm_channel.send(embed=embed)
+        await context.send(embed=embed)
 
     @rate_my.command(
         name="view_my_ratings",
@@ -248,41 +314,42 @@ If you want to rate this item, use the command /rate rate_item {item_name} with 
                     name=f"{item_name}",
                     value=f"""Category: {category_name}
 Description: {description}
-Rating: {rating}""",
+AVG Rating across metrics: {rating}""",
                     inline=False,
                 )
             await context.send(embed=embed)
 
-    @rate_my.command(
-        name="update_rating",
-        description="updates a rating.",
-    )
-    @app_commands.describe(
-        item_name = 'the id of the item to update.(use /rate view_my_ratings to see available items)',
-        rating = 'the rating to give the item (0-10), decimals will be rounded down',
-    )
-    async def update_rating(self, context: Context, item_name, rating) -> None:
-        """
-        Updates a rating
+#removing ability to update ratings for now, as it gets rather complex with metrics
+    # @rate_my.command(
+    #     name="update_rating",
+    #     description="updates a rating.",
+    # )
+    # @app_commands.describe(
+    #     item_name = 'the id of the item to update.(use /rate view_my_ratings to see available items)',
+    #     rating = 'the rating to give the item (0-10), decimals will be rounded down',
+    # )
+    # async def update_rating(self, context: Context, item_name, rating) -> None:
+    #     """
+    #     Updates a rating
 
-        :param context: The application command context.
-        """
-        user_id = context.author.id
-        guild_id = context.guild.id
-        rating = int(rating)
-        if rating < 0 or rating > 10:
-            await context.send("Rating must be between 0 and 10")
-            return
-        confirmation = self.db_write.update_rating(guild_id, user_id, item_name, rating)
-        if confirmation == 'could not update rating':
-            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
-            await context.send(embed=embed)
-        elif confirmation == 'rating updated':
-            embed = discord.Embed(description=f'Item {item_name} updated to {rating}', color=0x93C47D)
-            await context.send(embed=embed)
-        else:
-            embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
-            await context.send(embed=embed)
+    #     :param context: The application command context.
+    #     """
+    #     user_id = context.author.id
+    #     guild_id = context.guild.id
+    #     rating = int(rating)
+    #     if rating < 0 or rating > 10:
+    #         await context.send("Rating must be between 0 and 10")
+    #         return
+    #     confirmation = self.db_write.update_rating(guild_id, user_id, item_name, rating)
+    #     if confirmation == 'could not update rating':
+    #         embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+    #         await context.send(embed=embed)
+    #     elif confirmation == 'rating updated':
+    #         embed = discord.Embed(description=f'Item {item_name} updated to {rating}', color=0x93C47D)
+    #         await context.send(embed=embed)
+    #     else:
+    #         embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
+    #         await context.send(embed=embed)
 
     @rate_my.command(
         name="view_ratings",
@@ -302,16 +369,12 @@ Rating: {rating}""",
             await context.send(embed=embed)
         else:
             embed = discord.Embed(
-                title=f"Ratings for {items[0][0]}",
-                description="",
+                title=f"Ratings for {item_name}",
+                description="Average rating per metric",
                 color=0x93C47D,
             )
-            for w,rating, user_id in items:
-                user = self.bot.get_user(int(user_id)) or await self.bot.fetch_user(
-                int(user_id)
-            )
-                #change this to user / rating
-                embed.add_field(name=f'{user}:',
+            for metric, rating in items:
+                embed.add_field(name=f'{metric}:',
                                 value=rating,
                                 inline=False
                                 )

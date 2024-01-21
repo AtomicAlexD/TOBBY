@@ -1,34 +1,6 @@
 --- 
 database_name: tobby
 schema:
-  - name: users
-    tables:
-      - name: user
-        columns:
-          - name: id
-            type: INT
-            primary_key: true
-            nullable: false
-          - name: user_id
-            type: VARCHAR(32)
-            nullable: false
-          - name: user_name
-            type: varchar(255)
-            nullable: true
-  - name: guilds
-    tables:
-      - name: guild
-        columns:
-          - name: id
-            type: INT
-            primary_key: true
-            nullable: false
-          - name: guild_name
-            type: varchar(255)
-            nullable: true
-          - name: guild_id
-            type: VARCHAR(32)
-            nullable: false
   - name: ratings
     tables:
       - name: category
@@ -38,6 +10,23 @@ schema:
             primary_key: true
           - name: guild_id
             type: VARCHAR(32)
+          - name: name
+            type: varchar(255)
+            nullable: false
+          - name: description
+            type: varchar(4000)
+            nullable: true
+          - name: created_at
+            type: DATETIME2
+            nullable: false
+            default: GETDATE()
+      - name: metric
+        columns:
+          - name: id
+            type: INT
+            primary_key: true
+          - name: category_id
+            type: INT
           - name: name
             type: varchar(255)
             nullable: false
@@ -74,6 +63,8 @@ schema:
           - name: id
             type: INT
             primary_key: true
+          - name: metric_id
+            type: INT
           - name: item_id
             type: INT
           - name: rating

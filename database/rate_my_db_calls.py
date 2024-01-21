@@ -14,10 +14,14 @@ class db_read(db_calls):
 
     def get_categories(self, guild_id: int) -> list:
         try:
-            self.cursor.execute(
-                "SELECT [name], [description] FROM ratings.category WHERE guild_id=?",
-                (guild_id),
-            )
+            sql = """SELECT rc.[name]
+            ,rc.[description]
+            ,count(rm.id) AS metric_count
+            FROM ratings.category AS rc
+            INNER JOIN ratings.metric AS rm
+                ON rc.id = rm.category_id
+            WHERE guild_id=?"""
+            self.cursor.execute(sql,(guild_id))
             categories = self.cursor.fetchall()
             return categories
         except Exception as e:
@@ -100,14 +104,15 @@ WHERE rc.guild_id = ?
                 """SELECT ri.name
     ,rc.[name]
     ,ri.[description]
-    ,r.rating
-FROM rating.item AS ri
+    ,AVG(r.rating)
+FROM ratings.item AS ri
 INNER JOIN ratings.category AS rc 
     ON ri.category_id = rc.id
 INNER JOIN ratings.rating AS r
     ON ri.id = r.item_id
 WHERE rc.guild_id = ?
-    AND r.user_id = ?""",
+    AND r.user_id = ?
+GROUP BY ri.name, rc.[name], ri.[description]""",
                 (guild_id, user_id),
             )
             items = self.cursor.fetchall()
@@ -119,13 +124,16 @@ WHERE rc.guild_id = ?
     def view_ratings(self, guild_id: str, item_name: str) -> list:
         try:
             self.cursor.execute(
-                """SELECT ri.name, r.rating, r.user_id 
+                """SELECT rm.name, AVG(r.rating) AS average_rating
                 FROM ratings.rating AS r
+                INNER JOIN ratings.metric AS rm
+                    ON r.metric_id = rm.id
                 INNER JOIN ratings.item AS ri
                     ON r.item_id = ri.id
                 INNER JOIN ratings.category AS rc
                     ON ri.category_id = rc.id
-                WHERE rc.guild_id=? AND ri.name=?""",
+                WHERE rc.guild_id=? AND ri.name=?
+                GROUP BY rm.name""",
                 (guild_id, item_name),
             )
             ratings = self.cursor.fetchall()

@@ -9,15 +9,10 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import Context
-from database.poll_db_calls import db_read, db_write
-from datetime import datetime, timedelta
-
 
 class poll(commands.Cog, name="poll"):
     def __init__(self, bot) -> None:
         self.bot = bot
-        self.db_write = db_write()
-        self.db_read = db_read()
 
     @commands.hybrid_command(
         name="poll",

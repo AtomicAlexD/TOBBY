@@ -20,7 +20,8 @@ class db_read(db_calls):
             FROM ratings.category AS rc
             INNER JOIN ratings.metric AS rm
                 ON rc.id = rm.category_id
-            WHERE guild_id=?"""
+            WHERE guild_id=?
+            GROUP BY rc.[name], rc.[description]"""
             self.cursor.execute(sql,(guild_id))
             categories = self.cursor.fetchall()
             return categories
@@ -261,7 +262,7 @@ class db_write(db_calls):
     ) -> str:
         try:
             self.cursor.execute(
-                "INSERT INTO ratings.metric(category_id, [name], description) VALUES (?, ?, ?)",
+                "INSERT INTO ratings.metric(category_id, [name], description) VALUES (?, TRIM(?), ?)",
                 (category_id, metric_name, metric_description),
             )
             self.cursor.commit()

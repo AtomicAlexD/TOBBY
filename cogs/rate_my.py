@@ -91,7 +91,7 @@ class rate_my(commands.Cog, name="rate_my"):
                 description="",
                 color=0x93C47D,
             )
-            for metric_name, metric_description in metrics:
+            for metric_name, metric_description, id in metrics:
                 embed.add_field(
                     name=f"{metric_name}",
                     value=f"{metric_description}",
@@ -142,20 +142,26 @@ class rate_my(commands.Cog, name="rate_my"):
         """
         guild_id = context.guild.id
         categories = self.db_read.get_categories(guild_id)
-        
-        embed = discord.Embed(
-            title="Categories",
-            description="",
-            color=0x93C47D,
-        )
-        for category_name, category_description, metric_count in categories:
-            embed.add_field(
-                name=f"{category_name}",
-                value=f"""Description: {category_description}
-Count of Metrics: {metric_count}""",
-                inline=False,
+        if categories == None:
+            embed = discord.Embed(description='Error in finding the categories', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif categories == []:
+            embed = discord.Embed(description='No categories have been added in this guild', color=0x93C47D)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(
+                title="Categories",
+                description="",
+                color=0x93C47D,
             )
-        await context.send(embed=embed)
+            for category_name, category_description, metric_count in categories:
+                embed.add_field(
+                    name=f"{category_name}",
+                    value=f"""Description: {category_description}
+Count of Metrics: {metric_count}""",
+                    inline=False,
+                )
+            await context.send(embed=embed)
 
     @rate_my.command(
         name="new_item",
@@ -254,27 +260,30 @@ If you want to rate this item, use the command /rate item {item_name}""",
         dm_channel = await context.author.create_dm()
         embed = discord.Embed(description=f'The following messages are for **{item_name}**', color=0x93C47D)
         await dm_channel.send(embed=embed)
+#        print(f''''metrics: {metrics}
+#user_ratings: {user_ratings}''')
+        rated_metrics = set(rating[0] for rating in user_ratings) if user_ratings else set()
         for metric_name, metric_description, metric_id in metrics:
             # check user hasnt already rated this metric
-            if metric_name in user_ratings:
+            if metric_name in rated_metrics:
                 continue
-            # send dm to user
-            embed = discord.Embed(description=f'Please rate **{metric_name}** on a scale of 0 to 10', color=0x93C47D)
-            embed.add_field(
-                name=f"Description:",
-                value=f"{metric_description}",
-                inline=False,
-            )
-            await dm_channel.send(embed=embed)
-            # wait for user to respond
-            def check(m):
-                return m.author == context.author and m.channel == dm_channel
-            msg = await self.bot.wait_for('message', check=check)
-            rating = int(msg.content)
-            if rating < 0 or rating > 10:
-                embed = discord.Embed(description='Rating must be between 0 and 10', color=0xE02B2B)
+            while True:
+                # send dm to user
+                embed = discord.Embed(description=f'Please rate **{metric_name}** on a scale of 0 to 10', color=0x93C47D)
+                embed.add_field(
+                    name=f"Description:",
+                    value=f"{metric_description}",
+                    inline=False,
+                )
                 await dm_channel.send(embed=embed)
-                return
+                # wait for user to respond
+                def check(m):
+                    return m.author == context.author and m.channel == dm_channel and m.content.isdigit() and 0 <= int(m.content) <= 10
+                msg = await self.bot.wait_for('message', check=check)
+                rating = int(msg.content)
+                break
+        # need to add proper handling for if user doesnt respond with a number or a number outside of 0-10
+            
             confirmation = self.db_write.rate_item(guild_id, user_id, item_name, rating, metric_name)
             if confirmation == 'could not add rating':
                 embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)

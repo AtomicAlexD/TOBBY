@@ -291,3 +291,5 @@ if host == "PT-PC":
 else:
     dev = True
     bot.run(os.getenv("DEV_TOKEN"))
+
+print(f"Bot started in {'dev' if dev else 'prod'} mode.")

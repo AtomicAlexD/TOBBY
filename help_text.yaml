@@ -23,6 +23,14 @@ rate:
     - name: see_categories
       help: lists all the categories of things you can rate.
       required_variables:
+    - name: change_available_date
+      help: changes the date an item is available for rating.
+      required_variables: '{item_name} {new_date}'
+
+###### 
+# Not displaying the below commands as they are not locked down to admins only.
+# for our small use case this is fine, but we should look to lock them down later.
+###### 
 #    - name: new_metric
 #      help: adds a new metric to a category.
 #      required_variables: '{category_name} {metric_name}'

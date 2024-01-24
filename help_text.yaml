@@ -4,13 +4,13 @@ rate:
   commands:
     - name: item
       help: Starts a DM with the bot to rate an item. Default picks the most recent item available to rate.
-      required_variables: '{item_name} (optional)'
+      required_variables: ''
     - name: what_can_i_rate
       help: lists all the items in any category currently available for rating.
-      required_variables: 
+      required_variables: ''
     - name: view_my_ratings
       help: lists all the items you have rated.
-      required_variables: 
+      required_variables: ''
     - name: view_ratings
       help: lists all the ratings for an item.
       required_variables: '{item_name}'
@@ -22,10 +22,13 @@ rate:
       required_variables: '{category_name}'
     - name: see_categories
       help: lists all the categories of things you can rate.
-      required_variables:
+      required_variables: ''
     - name: change_available_date
       help: changes the date an item is available for rating.
       required_variables: '{item_name} {new_date}'
+    - name: update_rating
+      help: updates your rating for an item. Default picks the most recent item available to rate.
+      required_variables: ''
 
 ###### 
 # Not displaying the below commands as they are not locked down to admins only.

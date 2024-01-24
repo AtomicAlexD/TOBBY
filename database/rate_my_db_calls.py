@@ -1,12 +1,10 @@
 import pyodbc
 
-
 class db_calls:
     def __init__(self) -> None:
         self.db_connection_string = "Driver={ODBC Driver 17 for SQL Server};Server=localhost;Database=tobby;trusted_connection=yes;"
         self.conn = pyodbc.connect(self.db_connection_string)
         self.cursor = self.conn.cursor()
-
 
 class db_read(db_calls):
     def __init__(self) -> None:
@@ -252,7 +250,27 @@ GROUP BY ri.name, rc.[name], ri.[description]""",
         except Exception as e:
             print(e)
             return "could not get ratings"
-        
+
+    def get_previous_rating(self, guild_id: str, user_id: str, item_name: str, metric_name: str) -> int:
+        try:
+            self.cursor.execute(
+                """SELECT r.rating
+                FROM ratings.rating AS r
+                INNER JOIN ratings.item AS ri
+                    ON r.item_id = ri.id
+                INNER JOIN ratings.category AS rc
+                    ON ri.category_id = rc.id
+                INNER JOIN ratings.metric AS rm
+                    ON r.metric_id = rm.id
+                WHERE rc.guild_id=? AND ri.name=? AND r.user_id=? AND rm.name=?""",
+                (guild_id, item_name, user_id, metric_name),
+            )
+            rating = self.cursor.fetchone()
+            return rating[0]
+        except Exception as e:
+            print(e)
+            return "could not get previous rating"
+
 class db_write(db_calls):
     def __init__(self) -> None:
         super().__init__()

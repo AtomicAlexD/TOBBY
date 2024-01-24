@@ -14,6 +14,7 @@ import random
 import sys
 import yaml
 import discord
+import socket
 
 from discord.ext import commands, tasks
 from discord.ext.commands import Context
@@ -281,9 +282,12 @@ class DiscordBot(commands.Bot):
 
 
 load_dotenv()
-dev = True
 bot = DiscordBot()
-if dev == True:
-    bot.run(os.getenv("DEV_TOKEN"))
-else:
+host = socket.gethostname()
+
+if host == "PT-PC":
+    dev = False
     bot.run(os.getenv("TOKEN"))
+else:
+    dev = True
+    bot.run(os.getenv("DEV_TOKEN"))

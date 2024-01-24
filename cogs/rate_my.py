@@ -262,6 +262,8 @@ If you want to rate this item, use the command /rate item {item_name}""",
         await dm_channel.send(embed=embed)
         rated_metrics = set(rating[0] for rating in user_ratings) if user_ratings else set()
         for metric_name, metric_description, metric_id in metrics:
+            if metric_name in rated_metrics:
+                continue
             while True:
                 # send dm to user
                 embed = discord.Embed(description=f'Please rate **{metric_name}** on a scale of 0 to 10', color=0x93C47D)
@@ -335,6 +337,7 @@ AVG Rating across metrics: {rating}""",
         """
         user_id = context.author.id
         guild_id = context.guild.id
+        user_name = context.author.name
         if item_name == None:
             #grab most recently available item in the guild 
             item_name = self.db_read.get_most_recent_item(guild_id)
@@ -355,11 +358,14 @@ AVG Rating across metrics: {rating}""",
         dm_channel = await context.author.create_dm()
         embed = discord.Embed(description=f'The following messages are for **{item_name}**', color=0x93C47D)
         await dm_channel.send(embed=embed)
-        rated_metrics = set(rating[0] for rating in user_ratings) if user_ratings else set()
         for metric_name, metric_description, metric_id in metrics:
             while True:
-                # send dm to user
-                embed = discord.Embed(description=f'Please rate **{metric_name}** on a scale of 0 to 10', color=0x93C47D)
+                # get previous rating
+                previous_rating = self.db_read.get_previous_rating(guild_id, user_id, item_name, metric_name)
+                if previous_rating == 'could not get previous rating':
+                    embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+                    await dm_channel.send(embed=embed)
+                embed = discord.Embed(description=f'You previously rated **{metric_name}** a **{previous_rating}** out of 10', color=0x93C47D)
                 embed.add_field(
                     name=f"Description:",
                     value=f"{metric_description}",
@@ -382,7 +388,7 @@ AVG Rating across metrics: {rating}""",
             else:
                 embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
                 await dm_channel.send(embed=embed)
-        embed = discord.Embed(description=f'All metrics for **{item_name}** rated', color=0x93C47D)
+        embed = discord.Embed(description=f'{user_name} has updated their ratings for **{item_name}**', color=0x93C47D)
         await dm_channel.send(embed=embed)
         await context.send(embed=embed)
 

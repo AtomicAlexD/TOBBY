@@ -421,6 +421,27 @@ Average Rating: {rating}""",
                 )
             await context.send(embed=embed)
 
+    @rate_my.command(
+        name="change_available_date",
+        description="changes the date an item is available to rate.",
+    )
+    @app_commands.describe(
+        item_name = 'the name of the item to change.(use /rate view_items_by_category see available items)',
+        available_date = 'the date the item is available to rate, in the format YYYY-MM-DD',
+    )
+    async def change_available_date(self, context: Context, item_name, available_date) -> None:
+        guild_id = context.guild.id
+        confirmation = self.db_write.change_available_date(guild_id, item_name, available_date)
+        if confirmation == 'could not change available date':
+            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif confirmation == 'available date changed':
+            embed = discord.Embed(description=f'Item {item_name} available date changed to {available_date}', color=0x93C47D)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
 async def setup(bot) -> None:
     await bot.add_cog(rate_my(bot))

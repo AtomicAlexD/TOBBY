@@ -381,3 +381,22 @@ class db_write(db_calls):
             print(e)
             return "could not update rating"
         return "rating updated"
+
+    def change_available_date(
+        self, guild_id: str, item_name: str, available_to_rate_date: str
+    ) -> None:
+        try:
+            self.cursor.execute(
+                "SELECT ri.id FROM ratings.item AS ri INNER JOIN ratings.category AS rc ON ri.category_id = rc.id WHERE rc.guild_id=? AND ri.name=?",
+                (guild_id, item_name),
+            )
+            item_id = self.cursor.fetchone()
+            self.cursor.execute(
+                "UPDATE ratings.item SET available_to_rate_date=? WHERE id=?",
+                (available_to_rate_date, item_id[0]),
+            )
+            self.cursor.commit()
+        except Exception as e:
+            print(e)
+            return "could not change available date"
+        return "available date changed"

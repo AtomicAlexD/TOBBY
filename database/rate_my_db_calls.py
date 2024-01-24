@@ -363,18 +363,35 @@ class db_write(db_calls):
             return "could not add rating"
         return "rating added"
 
-    def update_rating(
-        self, guild_id: str, user_id: str, item_name: str, rating: int
+    def update_item_rating(
+        self, guild_id: str, user_id: str, item_name: str, rating: int, metric_name: str
     ) -> None:
         try:
             self.cursor.execute(
-                "SELECT ri.id FROM ratings.item AS ri INNER JOIN ratings.category AS rc ON ri.category_id = rc.id WHERE rc.guild_id=? AND ri.name=?",
+                """SELECT ri.id 
+                FROM ratings.item AS ri 
+                INNER JOIN ratings.category AS rc 
+                    ON ri.category_id = rc.id 
+                WHERE rc.guild_id=? 
+                    AND ri.name=?""",
                 (guild_id, item_name),
             )
             item_id = self.cursor.fetchone()
             self.cursor.execute(
-                "UPDATE ratings.rating SET rating=? WHERE item_id=? AND user_id=?",
-                (rating, item_id[0], user_id),
+                """SELECT rm.id 
+                FROM ratings.metric AS rm 
+                INNER JOIN ratings.category AS rc 
+                    ON rm.category_id = rc.id 
+                WHERE rc.guild_id=?
+                    AND rm.name=?""",
+                (guild_id, metric_name),
+            )
+            metric_id = self.cursor.fetchone()
+            self.cursor.execute(
+                """UPDATE ratings.rating
+                set rating=?
+                WHERE metric_id=? AND item_id=? AND user_id=?""",
+                (rating, metric_id[0],item_id[0], user_id),
             )
             self.cursor.commit()
         except Exception as e:

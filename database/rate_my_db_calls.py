@@ -278,6 +278,7 @@ INNER JOIN tobby.ratings.category AS c
     ON i.category_id = c.id
 WHERE i.available_to_rate_date < GETDATE()
     AND i.announced = 0
+    AND c.announcement_channel_id IS NOT NULL
 ORDER BY i.available_to_rate_date DESC'''
         try:
             self.cursor.execute(sql)

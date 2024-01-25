@@ -43,6 +43,10 @@ rate:
 #    - name: new_category
 #      help: adds a new category of things to rate, also adds a default metric called 'overall'. You can add more metrics to a category with the 'new_metric' command.
 #      required_variables: '{category_name}'
+  #  - name: set_announcement_channel
+  #    help: sets the channel where new items will be announced.
+  #    required_variables: '{channel_name}, {category_name}'
+
 poll:
   description: Creates a new poll, options will be separated by commas.
   commands:

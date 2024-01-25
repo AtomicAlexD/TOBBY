@@ -270,6 +270,24 @@ GROUP BY ri.name, rc.[name], ri.[description]""",
         except Exception as e:
             print(e)
             return "could not get previous rating"
+        
+    def check_item_availability(self):
+        sql = '''SELECT TOP (1) i.name, c.announcement_channel_id, i.id, i.description
+FROM tobby.ratings.item AS i
+INNER JOIN tobby.ratings.category AS c
+    ON i.category_id = c.id
+WHERE i.available_to_rate_date < GETDATE()
+    AND i.announced = 0
+ORDER BY i.available_to_rate_date DESC'''
+        try:
+            self.cursor.execute(sql)
+            item = self.cursor.fetchone()
+            if item is None:
+                return None, None, None, None
+            return item
+        except Exception as e:
+            print(e)
+            return None
 
 class db_write(db_calls):
     def __init__(self) -> None:
@@ -435,3 +453,27 @@ class db_write(db_calls):
             print(e)
             return "could not change available date"
         return "available date changed"
+
+    def mark_as_announced(self,item_id):
+        try:
+            self.cursor.execute(
+                "UPDATE ratings.item SET announced=1 WHERE id=?",
+                (item_id),
+            )
+            self.cursor.commit()
+        except Exception as e:
+            print(e)
+            return "could not mark as announced"
+        return "marked as announced"
+
+    def set_announcement_channel(self, guild_id, channel_id, category_id):
+        try:
+            self.cursor.execute(
+                "UPDATE ratings.category SET announcement_channel_id=? WHERE guild_id=? AND id=?",
+                (channel_id, guild_id, category_id),
+            )
+            self.cursor.commit()
+        except Exception as e:
+            print(e)
+            return "could not set announcement channel"
+        return "announcement channel set"

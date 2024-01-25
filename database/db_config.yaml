@@ -20,6 +20,9 @@ schema:
             type: DATETIME2
             nullable: false
             default: GETDATE()
+          - name: announcement_channel_id
+            type: VARCHAR(32)
+            nullable: true
       - name: metric
         columns:
           - name: id
@@ -58,6 +61,10 @@ schema:
             type: DATETIME2
             nullable: false
             default: GETDATE()
+          - name: announced
+            type: BIT
+            nullable: false
+            default: '0'
       - name: rating
         columns:
           - name: id

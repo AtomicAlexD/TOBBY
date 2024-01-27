@@ -286,8 +286,6 @@ bot = DiscordBot()
 host = socket.gethostname()
 
 if host == "PT-PC":
-    dev = False
     bot.run(os.getenv("TOKEN"))
 else:
-    dev = True
     bot.run(os.getenv("DEV_TOKEN"))

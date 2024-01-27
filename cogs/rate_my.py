@@ -7,7 +7,7 @@ Version: 6.1.0
 """
 import discord
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord.ext.commands import Context
 from database.rate_my_db_calls import db_read, db_write
 from datetime import datetime
@@ -17,6 +17,35 @@ class rate_my(commands.Cog, name="rate_my"):
         self.bot = bot
         self.db_write = db_write()
         self.db_read = db_read()
+
+# Start the task when the cog is loaded
+        self.check_item_availability.start()
+
+    @tasks.loop(hours=2)
+    async def check_item_availability(self):
+        # Check if an item is available to rate
+        item_name, channel_id, item_id, item_description = self.db_read.check_item_availability()
+
+        if item_name is not None:
+            channel = self.bot.get_channel(channel_id)
+            if channel is None:
+                channel = await self.bot.fetch_channel(channel_id)
+            self.db_write.mark_as_announced(item_id)
+            embed = discord.Embed(description=f"Item **{item_name}** is now available to rate!", color=0x93C47D)
+            embed.add_field(
+                name="Description:",
+                value=item_description
+            )
+            embed.add_field(
+                name="",
+                value=f"""As ths is the latest item that has become available to rate, use the command /rate item""",
+                inline=False,
+            )
+            await channel.send(embed=embed)
+
+    @check_item_availability.before_loop
+    async def before_check_item_availability(self):
+        await self.bot.wait_until_ready()  # wait until the bot logs in
 
     @commands.hybrid_group(
             name="rate",
@@ -474,9 +503,35 @@ Average Rating: {rating}""",
             embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
             await context.send(embed=embed)
 
+    @rate_my.command(
+        name="set_announcement_channel",
+        description="sets the channel to announce when an item is available to rate.",
+    )
+    @app_commands.describe(
+        channel = 'the channel to announce in.',
+        category= 'the category to announce items for.',
+    )
+    async def set_announcement_channel(self, context: Context, channel: discord.TextChannel, category) -> None:
+        guild_id = context.guild.id
+        category_id = self.db_read.get_category_id(guild_id, category)
+        channel_id = channel.id
+        if category_id == 'could not get category id':
+            embed = discord.Embed(description='Error in finding the category', color=0xE02B2B)
+            await context.send(embed=embed)
+        confirmation = self.db_write.set_announcement_channel(guild_id, channel_id, category_id)
+        if confirmation == 'could not set announcement channel':
+            embed = discord.Embed(description='Something went wrong... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+        elif confirmation == 'announcement channel set':
+            embed = discord.Embed(description=f'Announcement channel set to {channel} for {category}', color=0x93C47D)
+            await context.send(embed=embed)
+        else:
+            embed = discord.Embed(description='Im not sure what just happened... Blame Alex', color=0xE02B2B)
+            await context.send(embed=embed)
+
 # And then we finally add the cog to the bot so that it can load, unload, reload and use it's content.
 async def setup(bot) -> None:
     await bot.add_cog(rate_my(bot))
 
-
-# name="view_ratings_by_user",
+def cog_unload(self):
+    self.check_item_availability.cancel()

@@ -220,8 +220,6 @@ GROUP BY ri.name, rc.[name], ri.[description]""",
                 FROM ratings.metric AS rm
                 INNER JOIN ratings.category AS rc
                     ON rm.category_id = rc.id
-                INNER JOIN ratings.item AS ri
-                    ON rc.id = ri.category_id
                 WHERE rc.guild_id=? AND rc.id=?""",
                 (guild_id, category_id),
             )
